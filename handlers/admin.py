@@ -5,16 +5,18 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
 import os
+from dotenv import load_dotenv
 import database as db
 
 admin_router = Router()
+load_dotenv()
 
 class AdminAnswer(StatesGroup):
     waiting_for_answer = State()
     target_user_id = State()
 
 
-@admin_router.message(Command("fb_ban"), F.chat.id == os.getenv("ADMIN_ID"))
+@admin_router.message(Command("fb_ban"), F.chat.id == int(os.getenv("ADMIN_ID")))
 async def cmd_ban_user(message: Message, bot: Bot):
     """Использование: /fb_ban 12345678"""
     try:
@@ -25,7 +27,7 @@ async def cmd_ban_user(message: Message, bot: Bot):
     except (IndexError, ValueError):
         await message.answer("⚠️ Ошибка. Пример: <code>/fb_ban 123456789</code>", parse_mode="HTML")
 
-@admin_router.message(Command("fb_unban"), F.chat.id == os.getenv("ADMIN_ID"))
+@admin_router.message(Command("fb_unban"), F.chat.id == int(os.getenv("ADMIN_ID")))
 async def cmd_unban_user(message: Message):
     """Использование: /fb_unban 12345678"""
     try:
@@ -44,7 +46,7 @@ async def callback_answer(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer(f"✍️ Введите ответ для ID {user_id}:")
     await callback.answer()
 
-@admin_router.message(AdminAnswer.waiting_for_answer, F.chat.id == os.getenv("ADMIN_ID"))
+@admin_router.message(AdminAnswer.waiting_for_answer, F.chat.id == int(os.getenv("ADMIN_ID")))
 async def process_answer(message: Message, state: FSMContext):
     data = await state.get_data()
     target_user_id = data.get("target_user_id")

@@ -2,15 +2,16 @@ from aiogram import Router, F, Bot
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import CommandStart
 import os
+from dotenv import load_dotenv
 import database as db
 
 user_router = Router()
-
+load_dotenv()
 @user_router.message(CommandStart())
 async def cmd_start(message: Message):
     await message.answer("Привет! Пиши мне, я всё передам.\n Только пожалуйста, соблюдай правила nometa.xyz")
 
-@user_router.message(F.chat.id != os.getenv("ADMIN_ID"))
+@user_router.message(F.chat.id != int(os.getenv("ADMIN_ID")))
 async def handle_user_message(message: Message, bot: Bot):
     user_id = message.from_user.id
 
@@ -37,7 +38,7 @@ async def handle_user_message(message: Message, bot: Bot):
     try:
         await message.send_copy(chat_id=int(os.getenv("ADMIN_ID")))
         await bot.send_message(
-            chat_id=os.getenv("ADMIN_ID"),
+            chat_id=int(os.getenv("ADMIN_ID")),
             text=info_text,
             reply_markup=keyboard,
             parse_mode="HTML"
