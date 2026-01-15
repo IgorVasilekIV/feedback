@@ -20,9 +20,9 @@ async def handle_user_message(message: Message, bot: Bot):
 
     username = f"@{message.from_user.username}" if message.from_user.username else "None"
     info_text = (
-        f"<a href='tg://emoji?id=5890741826230423364'>💬</a> <b>Новое сообщение!</b>\n"
+        f"<a href='tg://emoji?id=5890741826230423364'>💬</a> <b>Новое сообщение!</b>\n\n"
         f"От: {message.from_user.full_name}\n"
-        f"└ [{username} / <code>{user_id}</code>]"
+        f"       [{username} / <code>{user_id}</code>]"
     )
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
