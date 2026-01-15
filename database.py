@@ -1,6 +1,5 @@
 import sqlite3
 
-# Имя файла базы данных
 DB_NAME = 'bot_database.db'
 
 def init_db():
@@ -18,7 +17,6 @@ def add_ban(user_id: int):
     """Добавляет пользователя в бан"""
     with sqlite3.connect(DB_NAME) as conn:
         cursor = conn.cursor()
-        # INSERT OR IGNORE, чтобы не было ошибки, если он уже там
         cursor.execute('INSERT OR IGNORE INTO banned_users (user_id) VALUES (?)', (user_id,))
         conn.commit()
 

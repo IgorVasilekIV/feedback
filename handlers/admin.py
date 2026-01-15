@@ -4,44 +4,38 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
-from config import ADMIN_ID
-# Импортируем функции БД
-from database import add_ban, remove_ban
+import os
+import database as db
 
 admin_router = Router()
 
-# Состояния для FSM (режим ответа)
 class AdminAnswer(StatesGroup):
     waiting_for_answer = State()
     target_user_id = State()
 
-# --- КОМАНДЫ РУЧНОГО БАНА/РАЗБАНА ---
 
-@admin_router.message(Command("fb_ban"), F.chat.id == ADMIN_ID)
-async def cmd_ban_user(message: Message):
+@admin_router.message(Command("fb_ban"), F.chat.id == int(os.getenv("ADMIN_ID")))
+async def cmd_ban_user(message: Message, bot: Bot):
     """Использование: /fb_ban 12345678"""
     try:
-        # Разбираем сообщение, берем второй аргумент
         user_id = int(message.text.split()[1])
-        add_ban(user_id)
-        await message.answer(f"🚫 Пользователь <code>{user_id}</code> забанен (сохранен в БД).", parse_mode="HTML")
+        db.add_ban(user_id)
+        await message.answer(f"<a href='tg://emoji?id=5922712343011135025'>🚫</a> Пользователь <code>{user_id}</code> забанен.", parse_mode="HTML")
+        await bot.send_message(user_id, "<a href='tg://emoji?id=5922712343011135025'>🚫</a> Вы были заблокированы администратором и не можете больше использовать бота.")
     except (IndexError, ValueError):
         await message.answer("⚠️ Ошибка. Пример: <code>/fb_ban 123456789</code>", parse_mode="HTML")
 
-@admin_router.message(Command("fb_unban"), F.chat.id == ADMIN_ID)
+@admin_router.message(Command("fb_unban"), F.chat.id == int(os.getenv("ADMIN_ID")))
 async def cmd_unban_user(message: Message):
     """Использование: /fb_unban 12345678"""
     try:
         user_id = int(message.text.split()[1])
-        remove_ban(user_id)
+        db.remove_ban(user_id)
         await message.answer(f"✅ Пользователь <code>{user_id}</code> разбанен.", parse_mode="HTML")
     except (IndexError, ValueError):
         await message.answer("⚠️ Ошибка. Пример: <code>/fb_unban 123456789</code>", parse_mode="HTML")
 
 
-# --- ОБРАБОТКА КНОПОК ---
-
-# Кнопка "Ответить"
 @admin_router.callback_query(F.data.startswith("answer_"))
 async def callback_answer(callback: CallbackQuery, state: FSMContext):
     user_id = int(callback.data.split("_")[1])
@@ -50,8 +44,7 @@ async def callback_answer(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer(f"✍️ Введите ответ для ID {user_id}:")
     await callback.answer()
 
-# Логика отправки ответа
-@admin_router.message(AdminAnswer.waiting_for_answer, F.chat.id == ADMIN_ID)
+@admin_router.message(AdminAnswer.waiting_for_answer, F.chat.id == int(os.getenv("ADMIN_ID")))
 async def process_answer(message: Message, state: FSMContext):
     data = await state.get_data()
     target_user_id = data.get("target_user_id")
@@ -62,13 +55,13 @@ async def process_answer(message: Message, state: FSMContext):
         await message.answer(f"❌ Ошибка отправки: {e}")
     await state.clear()
 
-# Кнопка "Бан"
+
 @admin_router.callback_query(F.data.startswith("ban_"))
-async def callback_ban_button(callback: CallbackQuery):
+async def callback_ban_button(callback: CallbackQuery, bot: Bot):
     user_id = int(callback.data.split("_")[1])
     
-    # Записываем в БД
-    add_ban(user_id)
+    db.add_ban(user_id)
     
     await callback.message.answer(f"🚫 Пользователь {user_id} заблокирован через кнопку.")
-    await callback.answer("Готово")
+    await callback.answer("Готово", show_alert=False)
+    await bot.send_message(user_id, "<a href='tg://emoji?id=5922712343011135025'>🚫</a> Вы были заблокированы администратором и не можете больше использовать бота.")

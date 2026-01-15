@@ -1,19 +1,20 @@
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher
-from config import BOT_TOKEN
+from dotenv import load_dotenv
+import os
 from handlers.user import user_router
 from handlers.admin import admin_router
-from database import init_db  # Импорт функции инициализации
+from database import init_db
 
 async def main():
     logging.basicConfig(level=logging.INFO)
 
-    # Создаем таблицы БД, если их нет
     init_db()
     print("База данных подключена.")
 
-    bot = Bot(token=BOT_TOKEN)
+    load_dotenv()
+    bot = Bot(token=os.getenv("BOT_TOKEN"))
     dp = Dispatcher()
 
     dp.include_router(admin_router)
