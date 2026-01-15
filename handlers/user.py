@@ -2,33 +2,27 @@ from aiogram import Router, F, Bot
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import CommandStart
 from config import ADMIN_ID
-# Импортируем проверку бана
-from database import is_banned
+import database as db
 
 user_router = Router()
 
 @user_router.message(CommandStart())
 async def cmd_start(message: Message):
-    await message.answer("Привет! Пиши мне, я передам всё админу.")
+    await message.answer("Привет! Пиши мне, я всё передам.\n Только пожалуйста, соблюдай правила nometa.xyz")
 
 @user_router.message(F.chat.id != ADMIN_ID)
 async def handle_user_message(message: Message, bot: Bot):
     user_id = message.from_user.id
 
-    # 1. Проверка бана через БД
-    if is_banned(user_id):
-        # Можно либо молчать, либо отвечать, что забанен. 
-        # Лучше не отвечать часто, чтобы не спамили, но для теста оставим ответ:
+    if db.is_banned(user_id):
         await message.answer("⛔ Вы заблокированы администратором.")
         return
 
-    # 2. Формируем инфо-карточку
-    username = f"@{message.from_user.username}" if message.from_user.username else "нет"
+    username = f"@{message.from_user.username}" if message.from_user.username else "None"
     info_text = (
-        f"📨 <b>Новое сообщение!</b>\n"
+        f"<a href='tg://emoji?id=5890741826230423364'>💬</a> <b>Новое сообщение!</b>\n"
         f"От: {message.from_user.full_name}\n"
-        f"Username: {username}\n"
-        f"ID: <code>{user_id}</code>"
+        f"└ [{username} / <code>{user_id}</code>]"
     )
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
