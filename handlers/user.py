@@ -9,7 +9,7 @@ user_router = Router()
 load_dotenv()
 @user_router.message(CommandStart())
 async def cmd_start(message: Message):
-    await message.answer("Привет! Пиши мне, я всё передам.\n Только пожалуйста, соблюдай правила nometa.xyz")
+    await message.answer("Привет! Пиши мне, я всё передам.\nТолько пожалуйста, соблюдай правила nometa.xyz")
 
 @user_router.message(F.chat.id != int(os.getenv("ADMIN_ID")))
 async def handle_user_message(message: Message, bot: Bot):
