@@ -25,7 +25,7 @@ class AdminAnswer(StatesGroup):
 @admin_router.message(Command("start"), F.chat.id == int(os.getenv("ADMIN_ID")))
 async def cmd_start_adm(message: Message, bot: Bot):
     """Просто старт с выводом чего то полезного для админа"""
-    now = datetime.datetime.now(datetime.datetime.utcnow())
+    now = datetime.datetime.now(datetime.datetime.utcnow().tzinfo)
     uptime = now - START_TIME
     
     uptime_str = str(uptime).split('.')[0] 
