@@ -102,15 +102,12 @@ async def self_process_answer(message: Message, bot: Bot, state: FSMContext):
 async def callback_answer(callback: CallbackQuery, state: FSMContext):
     user_id = int(callback.data.split("_")[1])
     await state.update_data(target_user_id=user_id)
+    kb_cancel = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_answer")]])
+
     await state.set_state(AdminAnswer.waiting_for_answer)
     await callback.message.answer(f"✍️ Введите ответ для ID {user_id}:", reply_markup=kb_cancel)
     await callback.answer()
 
-    kb_cancel = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_answer")]
-        ]
-    )
 
 @admin_router.message(AdminAnswer.waiting_for_answer, F.chat.id == int(os.getenv("ADMIN_ID")))
 async def process_answer(message: Message, state: FSMContext):
