@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 import database as db
 import time
 import datetime
+import asyncio
 
 START_TIME = datetime.datetime.utcnow()
 
@@ -102,8 +103,14 @@ async def callback_answer(callback: CallbackQuery, state: FSMContext):
     user_id = int(callback.data.split("_")[1])
     await state.update_data(target_user_id=user_id)
     await state.set_state(AdminAnswer.waiting_for_answer)
-    await callback.message.answer(f"✍️ Введите ответ для ID {user_id}:")
+    await callback.message.answer(f"✍️ Введите ответ для ID {user_id}:", reply_markup=kb_cancel)
     await callback.answer()
+
+    kb_cancel = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_answer")]
+        ]
+    )
 
 @admin_router.message(AdminAnswer.waiting_for_answer, F.chat.id == int(os.getenv("ADMIN_ID")))
 async def process_answer(message: Message, state: FSMContext):
@@ -117,6 +124,13 @@ async def process_answer(message: Message, state: FSMContext):
         await message.answer(f"❌ Ошибка отправки: {e}")
     await state.clear()
 
+@admin_router.callback_query(F.data == "cancel_answer")
+async def callback_cancel_answer(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
+    await callback.message.edit_text("Отменено.", reply_markup=None)
+    await callback.answer()
+    await asyncio.sleep(2)
+    await callback.message.delete()
 
 @admin_router.callback_query(F.data.startswith("ban_"))
 async def callback_ban_button(callback: CallbackQuery, bot: Bot):
