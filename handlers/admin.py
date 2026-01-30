@@ -22,6 +22,10 @@ class AdminAnswer(StatesGroup):
     waiting_for_answer = State()
     target_user_id = State()
 
+class SelfMessage(StatesGroup):
+    waiting_message = State()
+
+    
 @admin_router.message(Command("start"), F.chat.id == int(os.getenv("ADMIN_ID")))
 async def cmd_start_adm(message: Message, bot: Bot):
     """Просто старт с выводом чего то полезного для админа"""
@@ -77,6 +81,21 @@ async def cmd_unban_user(message: Message):
     except (IndexError, ValueError):
         await message.answer("⚠️ Ошибка. Пример: <code>/fb_unban 123456789</code>", parse_mode="HTML")
 
+@admin_router.message(Command("self"), (F.chat.id == int(os.getenv("ADMIN_ID"))) | (F.chat.id == int(os.getenv("ADMIN_ID"))))
+async def self_message(message: Message, bot: Bot, state: FSMContext):
+    """Отправка соо самому себе и спектатору"""
+    await state.set_state(SelfMessage.waiting_message)
+    await message.answer("Мяу мяу?")
+
+@admin_router.message(SelfMessage.waiting_message, (F.chat.id == int(os.getenv("ADMIN_ID"))) | (F.chat.id == int(os.getenv("SPEC_ID"))))
+async def self_process_answer(message: Message, bot: Bot, state: FSMContext):
+    try:
+        await message.send_copy(chat_id=int(os.getenv("ADMIN_ID")))
+        await message.send_copy(chat_id=int(os.getenv("SPEC_ID")))
+        await bot.send_message(int(os.getenv("ADMIN_ID")), f"Отправлено через /self")
+        await bot.send_message(int(os.getenv("SPEC_ID")), f"Отправлено через /self")
+    except Exception as e:
+        await message.answer(f"Ой, ощибка\n\n<blockquote>{e}</blockquote>")
 
 @admin_router.callback_query(F.data.startswith("answer_"))
 async def callback_answer(callback: CallbackQuery, state: FSMContext):

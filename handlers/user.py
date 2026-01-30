@@ -7,10 +7,12 @@ import database as db
 
 user_router = Router()
 load_dotenv()
-@user_router.message(CommandStart())
-async def cmd_start(message: Message):
-    await message.answer("Привет! Пиши мне, я всё передам.\nТолько пожалуйста, соблюдай правила nometa.xyz")
 
+@user_router.message(CommandStart())
+async def cmd_start(message: Message, bot: Bot):
+    await message.answer("Привет! Пиши мне, я всё передам.\nТолько пожалуйста, соблюдай правила nometa.xyz\n\nЗабанить я могу за пару секунд. А разбанить уже целый квест.")
+    await bot.send_message(int(os.getenv("ADMIN_ID")), f"{'@' + message.from_user.username if message.from_user.username else  message.from_user.full_name} [<code>{message.from_user.id}</code>] нажал <code>/start</code>", parse_mode="HTML")
+    
 @user_router.message(Command("meow"))
 async def meow(message: Message):
     await message.answer("мяв")
@@ -26,21 +28,13 @@ async def handle_user_message(message: Message, bot: Bot):
     username = f"@{message.from_user.username}" if message.from_user.username else "None"
     info_text = (
         f"<a href='tg://emoji?id=5890741826230423364'>💬</a> <b>Новое сообщение!</b>\n\n"
-        f"<a href='tg://emoji?id=5994809115740737538'>🐱</a> От: <code>{message.from_user.full_name}</code> [{username} / <code>{user_id}</code>]"
+        f"<a href='tg://emoji?id=5994809115740737538'>🐱</a> От: <a href='tg://user?id={user_id}'>{message.from_user.full_name}</a> [{username} / <code>{user_id}</code>]"
     )
 
     keyboard_own = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="↩️ Ответить", callback_data=f"answer_{user_id}"),
             InlineKeyboardButton(text="🚫 Бан", callback_data=f"ban_{user_id}")
-        ],
-        [
-            InlineKeyboardButton(text="🔗 Профиль", url=f"tg://user?id={user_id}")
-        ]
-    ])
-    keyboard_spec = InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(text="🔗 Профиль", url=f"tg://user?id={user_id}")
         ]
     ])
 
@@ -56,10 +50,9 @@ async def handle_user_message(message: Message, bot: Bot):
         await bot.send_message(
             chat_id=int(os.getenv("SPEC_ID")),
             text=info_text,
-            reply_markup=keyboard_spec,
             parse_mode="HTML"
         )
         await message.answer("Сообщение отправлено!")
     except Exception as e:
-        await message.answer("Произошла ошибка при отправке.")
-        print(f"Error: {e}")
+        await message.answer("Произошла ошибка при отправке. Я уже сообщил об ошибке")
+        await bot.send_message(int(os.getenv("ADMIN_ID")), f"Error with {message.from_user.id}: {e}")
