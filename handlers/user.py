@@ -12,7 +12,8 @@ load_dotenv()
 async def cmd_start(message: Message, bot: Bot):
     await message.answer("Привет! Пиши мне, я всё передам.\nТолько пожалуйста, соблюдай правила nometa.xyz\n\nЗабанить я могу за пару секунд. А разбанить уже целый квест.")
     await bot.send_message(int(os.getenv("ADMIN_ID")), f"{'@' + message.from_user.username if message.from_user.username else  message.from_user.full_name} [<code>{message.from_user.id}</code>] нажал <code>/start</code>", parse_mode="HTML")
-    
+    await bot.send_message(int(os.getenv("SPEC_ID")), f"{'@' + message.from_user.username if message.from_user.username else  message.from_user.full_name} [<code>{message.from_user.id}</code>] нажал <code>/start</code>", parse_mode="HTML")
+
 @user_router.message(Command("meow"))
 async def meow(message: Message):
     await message.answer("мяв")
