@@ -15,9 +15,8 @@ import asyncio
 
 START_TIME = datetime.datetime.utcnow()
 
-def __init__(self):
-    self.to_delete = ""
-    
+ADMIN_IDS = [int(os.getenv("ADMIN_ID")), int(os.getenv("SPEC_ID"))]
+
 admin_router = Router()
 load_dotenv()
 
@@ -28,8 +27,13 @@ class AdminAnswer(StatesGroup):
 class SelfMessage(StatesGroup):
     waiting_message = State()
 
+async def send_and_delete(bot: Bot, chat_id: int, text: str, time: float):
+    sent = await bot.send_message(chat_id, text, parse_mode="HTML")
+    await asyncio.sleep(time)
+    await bot.delete_message(chat_id, sent.message_id)
+
     
-@admin_router.message(Command("start"), F.chat.id == int(os.getenv("ADMIN_ID")) or F.chat.id == int(os.getenv("SPEC_ID")))
+@admin_router.message(Command("start"), F.chat.id.in_(ADMIN_IDS))
 async def cmd_start_adm(message: Message, bot: Bot):
     """Просто старт с выводом чего то полезного для админа"""
     now = datetime.datetime.now(datetime.datetime.utcnow().tzinfo)
@@ -65,7 +69,7 @@ async def cmd_start_adm(message: Message, bot: Bot):
             await message.answer_document(document=input_file, caption="⚠️ Сообщение слишком длинное, отправил файлом.", reply_markup=start_adm_kb)
 
         
-@admin_router.message(Command("ban"), F.chat.id == int(os.getenv("ADMIN_ID")))
+@admin_router.message(Command("ban"), F.chat.id.in_(ADMIN_IDS))
 async def cmd_ban_user(message: Message, bot: Bot):
     """Использование: /fb_ban 12345678"""
     try:
@@ -89,21 +93,22 @@ async def cmd_unban_user(message: Message):
     except (IndexError, ValueError):
         await message.answer("⚠️ Ошибка. Пример: <code>/fb_unban 123456789</code>", parse_mode="HTML")
 
-@admin_router.message(Command("self"), (F.chat.id == int(os.getenv("ADMIN_ID"))) or (F.chat.id == int(os.getenv("SPEC_ID"))))
+@admin_router.message(Command("self"), (F.chat.id == int(os.getenv("ADMIN_ID"))) | (F.chat.id == int(os.getenv("SPEC_ID"))))
 async def self_message(message: Message, bot: Bot, state: FSMContext):
     """Отправка соо самому себе и спектатору"""
     await state.set_state(SelfMessage.waiting_message)
     await message.answer("Мяу мяу?")
 
-@admin_router.message(SelfMessage.waiting_message, (F.chat.id == int(os.getenv("ADMIN_ID"))) or (F.chat.id == int(os.getenv("SPEC_ID"))))
-async def self_process_answer(message: Message, bot: Bot):
+@admin_router.message(SelfMessage.waiting_message, (F.chat.id == int(os.getenv("ADMIN_ID"))) | (F.chat.id == int(os.getenv("SPEC_ID"))))
+async def self_process_answer(message: Message, bot: Bot, state: FSMContext):
     try:
         await message.send_copy(chat_id=int(os.getenv("ADMIN_ID")))
         await message.send_copy(chat_id=int(os.getenv("SPEC_ID")))
         await bot.send_message(int(os.getenv("ADMIN_ID")), f"Отправлено через /self")
         await bot.send_message(int(os.getenv("SPEC_ID")), f"Отправлено через /self")
+        await state.clear()
     except Exception as e:
-        await message.answer(f"Ой, ощибка\n\n<blockquote>{e}</blockquote>")
+        await message.answer(f"Ой, ощибка\n\n<blockquote>{e}</blockquote>", parse_mode="HTML")
 
 @admin_router.callback_query(F.data.startswith("answer_"))
 async def callback_answer(callback: CallbackQuery, state: FSMContext):
@@ -116,16 +121,21 @@ async def callback_answer(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
-@admin_router.message(AdminAnswer.waiting_for_answer, F.chat.id == int(os.getenv("ADMIN_ID")) or F.chat.id == int(os.getenv("SPEC_ID")))
+@admin_router.message(AdminAnswer.waiting_for_answer, F.chat.id.in_(ADMIN_IDS))
 async def process_answer(message: Message, state: FSMContext, bot: Bot):
     data = await state.get_data()
     target_user_id = data.get("target_user_id")
     try:
+        if message.from_user.id == int(os.getenv("SPEC_ID")):
+            asyncio.create_task(send_and_delete(bot, target_user_id, "<tg-emoji emoji-id=5440854949846084134>🫤</tg-emoji>", 5.0))
+        else:
+            asyncio.create_task(send_and_delete(bot, target_user_id, "<tg-emoji emoji-id=5438243502355937743>🫤</tg-emoji>", 5.0))
+
         await message.send_copy(chat_id=target_user_id)
         await message.answer("✅ Ответ отправлен!")
         await bot.delete_message(chat_id=message.chat.id, message_id=message.message_id - 1)
     except Exception as e:
-        await message.answer(f"❌ Ошибка отправки: {e}")
+        await message.answer(f"❌ Ошибка отправки: {e}", parse_mode="HTML")
     await state.clear()
 
 @admin_router.callback_query(F.data == "cancel_answer")
