@@ -1,0 +1,10 @@
+# rename it to .env
+
+# token from @botfather
+BOT_TOKEN=" "
+
+# your id
+ADMIN_ID=" "
+
+# spectator id
+SPEC_ID=" "
