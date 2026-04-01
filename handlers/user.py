@@ -23,19 +23,20 @@ async def handle_user_message(message: Message, bot: Bot):
     user_id = message.from_user.id
 
     if db.is_banned(user_id):
-        await message.answer("⛔ Вы заблокированы администратором.")
+        await message.answer("<tg-emoji emoji-id=5922712343011135025>🚫</tg-emoji> Вы заблокированы администратором.", parse_mode="HTML")
         return
 
     username = f"@{message.from_user.username}" if message.from_user.username else "None"
     info_text = (
-        f"<a href='tg://emoji?id=5890741826230423364'>💬</a> <b>Новое сообщение!</b>\n\n"
-        f"<a href='tg://emoji?id=5994809115740737538'>🐱</a> От: <a href='tg://user?id={user_id}'>{message.from_user.full_name}</a> [{username} / <code>{user_id}</code>]"
+        "<tg-emoji emoji-id=5890741826230423364>💬</tg-emoji> <b>Новое сообщение!</b>\n\n"
+        f"<tg-emoji emoji-id=5994809115740737538>🐱</tg-emoji> От: <a href='tg://user?id={user_id}'>{message.from_user.full_name}</a>\n"
+        f"[{username} / <code>{user_id}</code>]"
     )
 
-    keyboard_own = InlineKeyboardMarkup(inline_keyboard=[
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="↩️ Ответить", callback_data=f"answer_{user_id}"),
-            InlineKeyboardButton(text="🚫 Бан", callback_data=f"ban_{user_id}")
+            InlineKeyboardButton(text="Ответить", callback_data=f"answer_{user_id}", icon_custom_emoji_id="5879841310902324730", style="primary"),
+            InlineKeyboardButton(text="Бан", callback_data=f"ban_{user_id}", icon_custom_emoji_id="5922712343011135025", style="danger")
         ]
     ])
 
@@ -44,16 +45,17 @@ async def handle_user_message(message: Message, bot: Bot):
         await bot.send_message(
             chat_id=int(os.getenv("ADMIN_ID")),
             text=info_text,
-            reply_markup=keyboard_own,
+            reply_markup=keyboard,
             parse_mode="HTML"
         )
         await message.send_copy(chat_id=int(os.getenv("SPEC_ID")))
         await bot.send_message(
             chat_id=int(os.getenv("SPEC_ID")),
             text=info_text,
+            reply_markup=keyboard,
             parse_mode="HTML"
         )
         await message.answer("Сообщение отправлено!")
     except Exception as e:
         await message.answer("Произошла ошибка при отправке. Я уже сообщил об ошибке")
-        await bot.send_message(int(os.getenv("ADMIN_ID")), f"Error with {message.from_user.id}: {e}")
+        await bot.send_message(int(os.getenv("ADMIN_ID")), f"Error with {message.from_user.id}: <blockquote expandable>{e}</blockquote>", parse_mode="HTML")

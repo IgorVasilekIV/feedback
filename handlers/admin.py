@@ -3,7 +3,7 @@ from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKe
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-import aiogram.exceptions
+from aiogram import exceptions
 
 import os
 import sys
@@ -15,7 +15,9 @@ import asyncio
 
 START_TIME = datetime.datetime.utcnow()
 
-
+def __init__(self):
+    self.to_delete = ""
+    
 admin_router = Router()
 load_dotenv()
 
@@ -27,7 +29,7 @@ class SelfMessage(StatesGroup):
     waiting_message = State()
 
     
-@admin_router.message(Command("start"), F.chat.id == int(os.getenv("ADMIN_ID")))
+@admin_router.message(Command("start"), F.chat.id == int(os.getenv("ADMIN_ID")) or F.chat.id == int(os.getenv("SPEC_ID")))
 async def cmd_start_adm(message: Message, bot: Bot):
     """Просто старт с выводом чего то полезного для админа"""
     now = datetime.datetime.now(datetime.datetime.utcnow().tzinfo)
@@ -38,41 +40,46 @@ async def cmd_start_adm(message: Message, bot: Bot):
     start = time.perf_counter()
     await bot.get_me()
     ping = int((time.perf_counter() - start) * 1000)
+    total_banned = db.get_banned()
 
     text = (
         "🤖 <b>Admin Panel</b>\n"
         f"• Up: <code>{START_TIME.strftime('%Y-%m-%d %H:%M:%S')} UTC</code>\n"
         f"• Uptime: <code>{uptime_str}</code>\n"
         f"• Ping: <code>{ping} ms</code>\n"
+        f"• Banned: <code>{total_banned if total_banned else 0}</code>"
     )
 
     start_adm_kb = InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="👥 Юзеры", callback_data="users"),
-            InlineKeyboardButton(text="мяу", callback_data="meow")
+            InlineKeyboardButton(text="👥 Юзеры", callback_data="ap_users"),
+            InlineKeyboardButton(text="мяу", callback_data="ap_meow")
         ]
     ])
     try:
         await message.answer(text, parse_mode="HTML", reply_markup=start_adm_kb)
 
     except aiogram.exceptions.MessageIsTooLong:
-            input_file = BufferedInputFile(text.encode("utf-8"), filename="admin_log.html")
+            input_file = BufferedInputFile(text.encode("utf-8"), filename="admin_log.txt")
                     
             await message.answer_document(document=input_file, caption="⚠️ Сообщение слишком длинное, отправил файлом.", reply_markup=start_adm_kb)
 
         
-@admin_router.message(Command("fb_ban"), F.chat.id == int(os.getenv("ADMIN_ID")))
+@admin_router.message(Command("ban"), F.chat.id == int(os.getenv("ADMIN_ID")))
 async def cmd_ban_user(message: Message, bot: Bot):
     """Использование: /fb_ban 12345678"""
     try:
         user_id = int(message.text.split()[1])
         db.add_ban(user_id)
-        await message.answer(f"<a href='tg://emoji?id=5922712343011135025'>🚫</a> Пользователь <code>{user_id}</code> забанен.", parse_mode="HTML")
-        await bot.send_message(user_id, "<a href='tg://emoji?id=5922712343011135025'>🚫</a> Вы были заблокированы администратором и не можете больше использовать бота.", parse_mode="HTML")
+        await message.answer(f"<tg-emoji emoji-id=5922712343011135025>🚫</tg-emoji> Пользователь <code>{user_id}</code> забанен.", parse_mode="HTML")
+        try:
+            await bot.send_message(user_id, "<tg-emoji emoji-id=5922712343011135025>🚫</tg-emoji> Вы были заблокированы администратором и не можете больше использовать бота.", parse_mode="HTML")
+        except exceptions.TelegramForbiddenError:
+            pass
     except (IndexError, ValueError):
         await message.answer("⚠️ Ошибка. Пример: <code>/fb_ban 123456789</code>", parse_mode="HTML")
 
-@admin_router.message(Command("fb_unban"), F.chat.id == int(os.getenv("ADMIN_ID")))
+@admin_router.message(Command("unban"), F.chat.id == int(os.getenv("ADMIN_ID")))
 async def cmd_unban_user(message: Message):
     """Использование: /fb_unban 12345678"""
     try:
@@ -82,14 +89,14 @@ async def cmd_unban_user(message: Message):
     except (IndexError, ValueError):
         await message.answer("⚠️ Ошибка. Пример: <code>/fb_unban 123456789</code>", parse_mode="HTML")
 
-@admin_router.message(Command("self"), (F.chat.id == int(os.getenv("ADMIN_ID"))) | (F.chat.id == int(os.getenv("ADMIN_ID"))))
+@admin_router.message(Command("self"), (F.chat.id == int(os.getenv("ADMIN_ID"))) or (F.chat.id == int(os.getenv("SPEC_ID"))))
 async def self_message(message: Message, bot: Bot, state: FSMContext):
     """Отправка соо самому себе и спектатору"""
     await state.set_state(SelfMessage.waiting_message)
     await message.answer("Мяу мяу?")
 
-@admin_router.message(SelfMessage.waiting_message, (F.chat.id == int(os.getenv("ADMIN_ID"))) | (F.chat.id == int(os.getenv("SPEC_ID"))))
-async def self_process_answer(message: Message, bot: Bot, state: FSMContext):
+@admin_router.message(SelfMessage.waiting_message, (F.chat.id == int(os.getenv("ADMIN_ID"))) or (F.chat.id == int(os.getenv("SPEC_ID"))))
+async def self_process_answer(message: Message, bot: Bot):
     try:
         await message.send_copy(chat_id=int(os.getenv("ADMIN_ID")))
         await message.send_copy(chat_id=int(os.getenv("SPEC_ID")))
@@ -105,18 +112,18 @@ async def callback_answer(callback: CallbackQuery, state: FSMContext):
     kb_cancel = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_answer")]])
 
     await state.set_state(AdminAnswer.waiting_for_answer)
-    await callback.message.answer(f"✍️ Введите ответ для ID {user_id}:", reply_markup=kb_cancel)
+    reply = await callback.message.answer(f"✍️ Введите ответ для ID {user_id}:", reply_markup=kb_cancel)
     await callback.answer()
 
 
-@admin_router.message(AdminAnswer.waiting_for_answer, F.chat.id == int(os.getenv("ADMIN_ID")))
-async def process_answer(message: Message, state: FSMContext):
+@admin_router.message(AdminAnswer.waiting_for_answer, F.chat.id == int(os.getenv("ADMIN_ID")) or F.chat.id == int(os.getenv("SPEC_ID")))
+async def process_answer(message: Message, state: FSMContext, bot: Bot):
     data = await state.get_data()
     target_user_id = data.get("target_user_id")
     try:
         await message.send_copy(chat_id=target_user_id)
-        await message.send_copy(chat_id=int(os.getenv("SPEC_ID")))
         await message.answer("✅ Ответ отправлен!")
+        await bot.delete_message(chat_id=message.chat.id, message_id=message.message_id - 1)
     except Exception as e:
         await message.answer(f"❌ Ошибка отправки: {e}")
     await state.clear()
@@ -124,8 +131,9 @@ async def process_answer(message: Message, state: FSMContext):
 @admin_router.callback_query(F.data == "cancel_answer")
 async def callback_cancel_answer(callback: CallbackQuery, state: FSMContext):
     await state.clear()
-    await callback.message.edit_text("Отменено.", reply_markup=None)
+    await callback.message.edit_text("Отменено", reply_markup=None)
     await callback.answer()
+    to_delete = 0
     await asyncio.sleep(2)
     await callback.message.delete()
 
@@ -137,5 +145,25 @@ async def callback_ban_button(callback: CallbackQuery, bot: Bot):
     
     await callback.message.answer(f"🚫 Пользователь {user_id} заблокирован через кнопку.")
     await callback.answer("Готово", show_alert=False)
-    await bot.send_message(user_id, "<a href='tg://emoji?id=5922712343011135025'>🚫</a> Вы были заблокированы администратором и не можете больше использовать бота.")
+    await bot.send_message(user_id, "<tg-emoji emoji-id=5922712343011135025>🚫</tg-emoji> Вы были заблокированы администратором и не можете больше использовать бота.", parse_mode="HTML")
 
+@admin_router.callback_query(F.data.startswith('ap_'))
+async def admin_panel_callbacks(callback: CallbackQuery, bot: Bot):
+    if callback.data == "ap_users":
+        total_users = db.get_total_users()
+        banned_users = db.get_total_users()
+        text = (
+            f"👥 <b>Пользователи бота</b>\n\n"
+            f"• Всего пользователей: <code>{total_users}</code>\n"
+            f"• Заблокировано пользователей: <code>{banned_users}</code>\n"
+        )
+        kb_ap_return = InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(text="↩️ Назад", callback_data="ap_start")
+            ]
+        ])
+        await callback.message.edit_text(text, parse_mode="HTML", reply_markup=kb_ap_return)
+        await callback.answer()
+    elif callback.data == "ap_meow":
+        await callback.message.edit_text("мяу", reply_markup=None)
+        await callback.answer()
