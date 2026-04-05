@@ -127,11 +127,14 @@ async def process_answer(message: Message, state: FSMContext, bot: Bot):
     target_user_id = data.get("target_user_id")
     try:
         if message.from_user.id == int(os.getenv("SPEC_ID")):
-            asyncio.create_task(send_and_delete(bot, target_user_id, "<tg-emoji emoji-id=5440854949846084134>🫤</tg-emoji>", 5.0))
+            #asyncio.create_task(send_and_delete(bot, target_user_id, "<tg-emoji emoji-id=5440854949846084134>🫤</tg-emoji>", 5.0))
+            await message.send_copy(chat_id=int(os.getenv("ADMIN_ID")))
+            await message.send_copy(chat_id=target_user_id)
         else:
-            asyncio.create_task(send_and_delete(bot, target_user_id, "<tg-emoji emoji-id=5438243502355937743>🫤</tg-emoji>", 5.0))
+            #asyncio.create_task(send_and_delete(bot, target_user_id, "<tg-emoji emoji-id=5438243502355937743>🫤</tg-emoji>", 5.0))
+            await message.send_copy(chat_id=int(os.getenv("SPEC_ID")))
+            await message.send_copy(chat_id=target_user_id)
 
-        await message.send_copy(chat_id=target_user_id)
         await message.answer("✅ Ответ отправлен!")
         await bot.delete_message(chat_id=message.chat.id, message_id=message.message_id - 1)
     except Exception as e:
