@@ -1,5 +1,5 @@
 from aiogram import Router, F, Bot
-from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, ReactionTypeEmoji
 from aiogram.filters import CommandStart, Command
 import os
 from dotenv import load_dotenv
@@ -56,9 +56,9 @@ async def handle_user_message(message: Message, bot: Bot):
             reply_markup=keyboard,
             parse_mode="HTML"
         )
-        success = await message.answer("Сообщение отправлено!")
-        await asyncio.sleep(5)
-        await success.delete()
+        await message.react([ReactionTypeEmoji(emoji="👌")])
+        await asyncio.sleep(3)
+        await message.react([])
     except Exception as e:
         await message.answer("Произошла ошибка при отправке. Я уже сообщил об ошибке")
         await bot.send_message(int(os.getenv("ADMIN_ID")), f"Error with {message.from_user.id}: <blockquote expandable>{e}</blockquote>", parse_mode="HTML")

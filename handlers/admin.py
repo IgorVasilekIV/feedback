@@ -1,5 +1,5 @@
 from aiogram import Router, F, Bot
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, BufferedInputFile
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, BufferedInputFile, ReactionTypeEmoji
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -135,8 +135,9 @@ async def process_answer(message: Message, state: FSMContext, bot: Bot):
             await message.send_copy(chat_id=int(os.getenv("SPEC_ID")))
             await message.send_copy(chat_id=target_user_id)
 
-        await message.answer("✅ Ответ отправлен!")
-        await bot.delete_message(chat_id=message.chat.id, message_id=message.message_id - 1)
+        await message.react([ReactionTypeEmoji(emoji="👌")])
+        await asyncio.sleep(2)
+        await message.react([])
     except Exception as e:
         await message.answer(f"❌ Ошибка отправки: {e}", parse_mode="HTML")
     await state.clear()
