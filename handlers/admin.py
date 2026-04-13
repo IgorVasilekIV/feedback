@@ -294,11 +294,11 @@ async def cmd_set_spec_perm(message: Message):
         
         perms = ['ban', 'unban', 'answer']
         if perm_name not in perms:
-            await message.answer("<tg-emoji emoji-id=5271803452232600184>😈</tg-emoji> Неизвестное право. Используйте: ban, unban или answer")
+            await message.answer("<tg-emoji emoji-id=5271803452232600184>😈</tg-emoji> Неизвестное право. Используйте: ban, unban или answer", parse_mode="HTML")
             return
 
         if value not in ['true', 'false', '1', '0']:
-            await message.answer("<tg-emoji emoji-id=5271803452232600184>😈</tg-emoji> Значение должно быть true/false или 1/0")
+            await message.answer("<tg-emoji emoji-id=5271803452232600184>😈</tg-emoji> Значение должно быть true/false или 1/0", parse_mode="HTML")
             return
 
         db.update_spec_permission(user_id, perm_name, value in ['true', '1'])
