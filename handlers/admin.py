@@ -60,7 +60,16 @@ async def cmd_start_adm(message: Message, bot: Bot):
         f"• Up: <code>{START_TIME.strftime('%Y-%m-%d %H:%M:%S')} UTC</code>\n"
         f"• Uptime: <code>{uptime_str}</code>\n"
         f"• Ping: <code>{ping} ms</code>\n"
-        f"• Banned: <code>{total_banned if total_banned else 0}</code>"
+        f"• Banned: <code>{total_banned if total_banned else 0}</code>\n\n"
+        "<blockquote expandable>Команды:\n"
+        "• /addadm - Добавить администратора\n"
+        "• /ban - Забанить пользователя\n"
+        "• /unban - Разбанить пользователя\n"
+        "• /start - Это меню\n"
+        "• /specperms - Показать права SPEC или права конкретного пользователя\n"
+        "• /setspecperm - Установить право SPEC для пользователя\n"
+        "• /self - Отправить сообщение самому себе и другим администраторам\n"
+        "</blockquote>"
     )
 
     start_adm_kb = InlineKeyboardMarkup(inline_keyboard=[
