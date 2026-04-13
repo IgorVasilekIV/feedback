@@ -208,7 +208,7 @@ async def callback_ban_button(callback: CallbackQuery, bot: Bot):
 async def admin_panel_callbacks(callback: CallbackQuery, bot: Bot):
     if callback.data == "ap_users":
         total_users = db.get_total_users()
-        banned_users = db.get_total_users()
+        banned_users = db.get_banned()
         text = (
             f"[BETA] 👥 <b>Пользователи бота</b>\n\n"
             #f"• Всего пользователей: <code>{total_users}</code>\n"
